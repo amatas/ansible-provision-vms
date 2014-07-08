@@ -1,0 +1,18 @@
+[submodule "roles/ansible-ssh"]
+	path = roles/ansible-ssh
+	url = https://github.com/amatas/ansible-ssh.git
+[submodule "roles/ansible-webserver"]
+	path = roles/ansible-webserver
+	url = https://github.com/amatas/ansible-webserver.git
+[submodule "roles/ansible-iptables"]
+	path = roles/ansible-iptables
+	url = https://github.com/amatas/ansible-iptables.git
+[submodule "roles/ansible-pxe"]
+	path = roles/ansible-pxe
+	url = https://github.com/amatas/ansible-pxe.git
+[submodule "roles/ansible-utils"]
+	path = roles/ansible-utils
+	url = https://github.com/amatas/ansible-utils.git
+[submodule "roles/ansible-libvirt"]
+	path = roles/ansible-libvirt
+	url = https://github.com/amatas/ansible-libvirt.git

@@ -1,0 +1,80 @@
+---
+# Pre tasks
+
+    - name: Ensure that tftp is installed
+      file: path=/tftpboot state=directory
+      delegate_to: "{{domain_parent}}"
+
+    - name: Ensure that libvirt is installed
+      file: path=/var/run/libvirt state=directory
+      delegate_to: "{{domain_parent}}"
+
+    - name: Check if the VM is defined
+      shell: virsh list --all --name
+      register: vm_registered
+      delegate_to: "{{domain_parent}}"
+      when: domain_destroy is defined and domain_destroy
+
+    - name: Remove previous VM (destroy)
+      virt: name={{domain_name|mandatory}}
+            command=destroy
+      delegate_to: "{{domain_parent}}"
+      when: vm_registered.stdout.find('{{domain_name|mandatory}}') == 0 and domain_destroy is defined and domain_destroy
+
+    - name: Remove previous VM (undefine)
+      virt: name={{domain_name|mandatory}}
+            command=undefine
+      delegate_to: "{{domain_parent}}"
+      when: vm_registered.stdout.find('{{domain_name|mandatory}}') == 0 and domain_destroy is defined and domain_destroy
+
+    - name: Remove previous VM (remove disk)
+      file: name=/data/images/{{domain_name|mandatory}}.img state=absent
+      delegate_to: "{{domain_parent}}"
+      when: vm_registered.stdout.find('{{domain_name|mandatory}}') == 0 and domain_destroy is defined and domain_destroy
+
+    - name: Create storage
+      command: /usr/bin/qemu-img create -f raw /data/images/{{domain_name|mandatory}}.img {{domain_disk_size}}
+               creates=/data/images/{{domain_name|mandatory}}.img
+      delegate_to: "{{domain_parent}}"
+
+    - name: Add VM MAC and IP entry in network definition file
+      lineinfile: dest=/etc/libvirt/qemu/networks/default.xml
+                  regexp="{{domain_mac}}" line="<host mac='{{domain_mac}}' name='{{domain_name}}' ip='{{domain_ip}}' />"
+                  insertafter="<range" owner=root group=root mode=0600
+      delegate_to: "{{domain_parent}}"
+
+    - name: Add VM MAC and IP entry in network definition file dnsmasq
+      lineinfile: dest=/var/lib/libvirt/dnsmasq/default.hostsfile line="{{domain_mac}},{{domain_ip}},{{domain_name}}"
+      delegate_to: "{{domain_parent}}"
+
+    - name: Restart dhcp
+      shell: "kill -HUP `cat /var/run/libvirt/network/default.pid`"
+      delegate_to: "{{domain_parent}}"
+
+    - name: Save Domain PXE boot entry
+      template: src=templates/pxe-entry.j2 dest=/tftpboot/pxelinux.cfg/01-{{ domain_mac | regex_replace(':','-') }}
+      delegate_to: "{{domain_parent}}"
+
+    - name: Save Domain Kickstart boot entry
+      template: src=templates/ks.cfg.j2 dest=/data/ks/ks-{{domain_name}}.cfg
+      delegate_to: "{{domain_parent}}"
+
+    - name: Check if the VM is defined
+      shell: virsh list --all --name
+      register: vm_running
+      delegate_to: "{{domain_parent}}"
+
+    - name: Create domain
+      virt: name={{domain_name|mandatory}}
+            command=define
+            xml="{{ lookup('template', '../templates/vm.xml.j2') }}"
+      when: vm_running.stdout.find('{{domain_name|mandatory}}') == -1
+      delegate_to: "{{domain_parent}}"
+
+    - name: Start domain
+      virt: name={{domain_name}} state=running
+      delegate_to: "{{domain_parent}}"
+
+    - name: Wait for domain to be ready
+      wait_for: host={{ domain_ip }} port=22 state=started timeout=1200
+      delegate_to: "{{domain_parent}}"

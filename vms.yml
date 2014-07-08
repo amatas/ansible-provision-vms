@@ -1,0 +1,36 @@
+---
+- name: Install common stuff
+  hosts: vms
+  user: root
+  # The vm doesn't exist yet, so gather facts can not work.
+  gather_facts: no
+
+  vars_files:
+    - vars/external_vars.yml
+    - vars/private_vars.yml
+
+  vars:
+    domain_cpus: 2
+    domain_memory: 1024
+    domain_disk_size: 10G
+    domain_ssh_keys: "{{ssh_keys}}"
+    domain_root_password: "{{root_pw}}"
+    domain_repository: "{{repository}}"
+
+  pre_tasks:
+    - include: includes/pretasks_vm.yml
+
+  roles:
+    - role: ansible-utils
+      utils_repository: "{{domain_repository}}"
+    - role: ansible-ssh
+
+  post_tasks:
+    - include: includes/posttasks_vm.yml
+
+- name: Gather facts from VM
+  hosts: all
+  user: root
+  gather_facts: yes
+  tasks: []
+

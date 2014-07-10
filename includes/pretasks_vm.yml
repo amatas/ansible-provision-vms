@@ -18,6 +18,7 @@
     - name: Remove previous VM (destroy)
       virt: name={{domain_name|mandatory}}
             command=destroy
+      ignore_errors: yes
       delegate_to: "{{domain_parent}}"
       when: vm_registered.stdout.find('{{domain_name|mandatory}}') == 0 and domain_destroy is defined and domain_destroy
 
@@ -38,17 +39,17 @@
       delegate_to: "{{domain_parent}}"
 
     - name: Add VM MAC and IP entry in network definition file
-      lineinfile: dest=/etc/libvirt/qemu/networks/default.xml
+      lineinfile: dest=/etc/libvirt/qemu/networks/private.xml
                   regexp="{{domain_mac}}" line="<host mac='{{domain_mac}}' name='{{domain_name}}' ip='{{domain_ip}}' />"
                   insertafter="<range" owner=root group=root mode=0600
       delegate_to: "{{domain_parent}}"
 
     - name: Add VM MAC and IP entry in network definition file dnsmasq
-      lineinfile: dest=/var/lib/libvirt/dnsmasq/default.hostsfile line="{{domain_mac}},{{domain_ip}},{{domain_name}}"
+      lineinfile: dest=/var/lib/libvirt/dnsmasq/private.hostsfile line="{{domain_mac}},{{domain_ip}},{{domain_name}}"
       delegate_to: "{{domain_parent}}"
 
     - name: Restart dhcp
-      shell: "kill -HUP `cat /var/run/libvirt/network/default.pid`"
+      shell: "kill -HUP `cat /var/run/libvirt/network/private.pid`"
       delegate_to: "{{domain_parent}}"
 
     - name: Save Domain PXE boot entry

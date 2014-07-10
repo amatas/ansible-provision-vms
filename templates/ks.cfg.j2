@@ -3,14 +3,14 @@
 
 install
 
-lang es_ES.UTF-8
-keyboard es
+lang en_US.UTF-8
+keyboard us
 network --onboot yes --device eth0 --bootproto dhcp --noipv6
 rootpw  --iscrypted {{domain_root_password}}
 firewall --service=ssh
 authconfig --enableshadow --passalgo=sha512
 selinux --enforcing
-timezone --utc Europe/Madrid
+timezone --utc America/Toronto
 
 bootloader --location=mbr --driveorder=sda --append="crashkernel=auto rhgb quiet"
 ignoredisk --only-use=sda
